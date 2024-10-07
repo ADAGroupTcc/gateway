@@ -11,7 +11,7 @@ ENV KONG_ADMIN_ERROR_LOG=/dev/stderr
 ENV KONG_ADMIN_LISTEN="0.0.0.0:8001, 0.0.0.0:8444 ssl"
 ENV KONG_PREFIX=/var/run/kong
 
-RUN mkdir -p /kong/declarative /tmp /var/run/kong
+RUN mkdir /kong/declarative /tmp /var/run/kong
 
 COPY ./declarative/kong.yml /kong/declarative/kong.yml
 
