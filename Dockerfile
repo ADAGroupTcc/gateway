@@ -1,22 +1,21 @@
-FROM golang:1.22.4-alpine3.19 AS build
-WORKDIR /src
+# Use the official Kong image (v3.8.0 as specified)
+FROM kong:3.8.0
 
-COPY . .
+# Set environment variables for DB-less mode
+ENV KONG_DATABASE=off
+ENV KONG_DECLARATIVE_CONFIG=/kong/declarative/kong.yml
+ENV KONG_PROXY_ACCESS_LOG=/dev/stdout
+ENV KONG_ADMIN_ACCESS_LOG=/dev/stdout
+ENV KONG_PROXY_ERROR_LOG=/dev/stderr
+ENV KONG_ADMIN_ERROR_LOG=/dev/stderr
+ENV KONG_ADMIN_LISTEN="0.0.0.0:8001, 0.0.0.0:8444 ssl"
+ENV KONG_PREFIX=/var/run/kong
 
-RUN apk add -U --no-cache gcc g++ openssh
+RUN mkdir -p /kong/declarative /tmp /var/run/kong
 
-RUN go mod download \
-  && CGO_ENABLED=0 go build -ldflags='-s -w -extldflags "-static"' -o bin/api cmd/api/main.go
+COPY ./declarative/kong.yml /kong/declarative/kong.yml
 
-FROM alpine:3.18.2
-WORKDIR /home/adda-tcc/app
+EXPOSE 8000 8443 8001 8444
 
-COPY --from=build /src/docker-entrypoint.sh /src/bin/api ./
-COPY --from=build /src/mongodb.pem ./
-RUN chmod +x docker-entrypoint.sh
-
-EXPOSE 8080
-
-HEALTHCHECK --interval=5s --timeout=3s CMD wget --no-verbose --tries=3 --spider http://localhost:7000/health || exit 1
-ENTRYPOINT ["/home/adda-tcc/app/docker-entrypoint.sh"]
-CMD ["/home/adda-tcc/app/api"]
+# Run Kong in DB-less mode
+CMD ["kong", "docker-start"]
